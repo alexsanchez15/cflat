@@ -11,7 +11,7 @@
 
 // set up token types:
 enum class TokenType{
-	EXIT, KEYWORD, IDENTIFIER, EQUALS, INT_LITERAL, SEMI, WHITESPACE, RPAREN, LPAREN, PLUS, STAR, STRING, PRINT, LCURL, RCURL, IF, BEQ, WHILE
+	EXIT, KEYWORD, IDENTIFIER, EQUALS, INT_LITERAL, SEMI, WHITESPACE, RPAREN, LPAREN, PLUS, STAR, STRING, PRINT, LCURL, RCURL, IF, BEQ, WHILE, LESSTHAN
 };
 struct Token{
     TokenType type;
@@ -57,7 +57,9 @@ inline std::string token_string(const TokenType type){
         case TokenType::BEQ:
             return "BEQ"; // boolean equals
         case TokenType::WHILE:
-            return "WHILE"; // boolean equals
+            return "WHILE"; 
+        case TokenType::LESSTHAN:
+            return "LESSTHAN"; 
         default:
             return "UNKNOWN"; //should never happen, avoid compilier being mad
     }
@@ -70,6 +72,7 @@ inline int tok_prec(const TokenType type){
         case TokenType::STAR:
             return 2;
         case TokenType::BEQ:
+        case TokenType::LESSTHAN:
             return 0;
         default:
             std::cerr << "Bad token passed to tok_prec (precedance mapping) function: " << token_string(type) << std::endl;
@@ -81,6 +84,7 @@ inline bool is_bin_exp_op(const TokenType type){
         case TokenType::PLUS:
         case TokenType::STAR:
         case TokenType::BEQ:
+        case TokenType::LESSTHAN:
             return true;
         default:
             return false;
@@ -95,7 +99,7 @@ public:
     std::vector<Token> tokenize(){
         std::vector<Token> tokens;
         std::regex pattern
-            (R"(\b(exit|int|print|string|if|while)\b|"[^"]*"|[a-zA-Z_][a-zA-Z0-9_]*|(==)|[=,;,\(,\),+,*, \{,\}]|[\-]?\d+|\s+|.+)");
+            (R"(\b(exit|int|print|string|if|while)\b|"[^"]*"|[a-zA-Z_][a-zA-Z0-9_]*|(==)|[=,;,<,\(,\),+,*, \{,\}]|[\-]?\d+|\s+|.+)");
         std::sregex_iterator itr(m_src.begin(), m_src.end(), pattern);
         std::sregex_iterator end_marker;
 
@@ -147,6 +151,9 @@ public:
             }
             else if(match_str[0] == ';' && match_str.size() == 1){
                 tokens.push_back({TokenType::SEMI, m_index}); 
+            }
+            else if(match_str[0] == '<' && match_str.size() == 1){
+                tokens.push_back({TokenType::LESSTHAN, m_index}); 
             }
             else if(match_str[0] == '+' && match_str.size() == 1){
                 tokens.push_back({TokenType::PLUS, m_index}); 

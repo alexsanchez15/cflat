@@ -83,7 +83,7 @@ public:
         // make sure data exists in rodata (read only) for str lits
         // will just be a pointer to the string in this case.
         int label_offset = add_rodata(*p->str_contents); //(str_contents is uniq ptr)
-        std::string strlabel = ".Lstr" + std::to_string(label_offset);
+        std::string strlabel = "Lstr" + std::to_string(label_offset);
         std::string lenlabel = "len" + std::to_string(label_offset);
         //my convention: pointer to string contents in rax, length in rsi.
         // rax -> rsi -> rdx is my thinking of convention for passing refrences
@@ -127,6 +127,7 @@ public:
         stream_p <<"\tmov rax, 1" << std::endl;
         stream_p <<"\tmov rdi, 1" << std::endl;
         stream_p <<"\tsyscall" << std::endl;
+        print_newline();
     };
     void visit(NodeStmtInitVar* p) {
         // ok so what happens when we init a var?
@@ -134,14 +135,13 @@ public:
         // if int, gen expression code -> result into rax
         // push onto stack, store the offest in var_offset map for each integer.
         std::string type = *p->type; //easier access
+        p->expr->accept(*this);
+
         if(type == "int"){
             if(p->expr->str_op()){
                 std::cerr << "type \"int\" cannot be initialized as a string." << std::endl;
                 exit(EXIT_FAILURE);
             }
-            // now we can safely (...) visit the expression, putting its result in rax.
-            p->expr->accept(*this);
-            
             stream_p <<"\tmov qword [rbp - " << (var_stack_index + 1) *8 << "], rax" << std::endl; // put onto stack.
             var_offset[*p->name].o1 = var_stack_index; // how many places down on the stack it is
             var_stack_index++;
@@ -154,10 +154,6 @@ public:
                 std::cerr << "type \"string\" cannot be initialized as a numeric." << std::endl;
                 exit(EXIT_FAILURE);
             }
-            // now we can safely (...) visit the expression
-            // now str ptr in rax, strlen in rsi
-            p->expr->accept(*this);
-            
             stream_p <<"\tmov qword [rbp - " << (var_stack_index + 1) *8 << "], rax" << std::endl; // put onto stack.
             var_offset[*p->name].o1 = var_stack_index; // how many places down on the stack it is
             var_stack_index++;
@@ -189,6 +185,16 @@ public:
             stream_p <<"\tmov qword [rbp - " << (var_offset[*p->name].o2.value() + 1) *8 << "], rsi" << std::endl; // put onto stack.
         }
     };
+    void visit(NodeExprBoolL* p){
+        // movzx rax, al -> moves result into rax by my convention expressions -> rax. zero out beginning
+        p->lhs->accept(*this);
+        stream_p << "\tpush rax" << std::endl; //throw on stack, avoid colisions with other registers (and thinking)
+        p->rhs->accept(*this);
+        stream_p << "\tpop rsi" << std::endl;
+        stream_p << "\tcmp rsi, rax" << std::endl; // 
+        stream_p << "\tsetl al" << std::endl; // is rsi < rax?
+        stream_p << "\tmovzx rax, al" << std::endl; 
+    }
     void visit(NodeExprBoolEq* p) {
         // cmp register 1, register 2
         // result flags get set.
@@ -199,7 +205,6 @@ public:
         p->rhs->accept(*this);
         stream_p << "\tpop rsi" << std::endl;
         stream_p << "\tcmp rax, rsi" << std::endl; //set result flags
-
         //mayhaps make this more extended? for now, just eq case.
         stream_p << "\tsete al" << std::endl;
         stream_p << "\tmovzx rax, al" << std::endl; // smile
@@ -314,15 +319,26 @@ private:
     int add_rodata(std::string s){
         if(stream_rodata.str().empty()){
             stream_rodata <<"section .rodata" << std::endl;
+            stream_rodata <<"newline: db 10" << std::endl;
         }
         // format .Lstr0: db "xyz", 0
-        // len0: equ $ - .Lstr0
-        std::string label = ".Lstr" + std::to_string(count_rodata);
-        stream_rodata << label << ": db \"" << s << "\", 10, 0" << std::endl;
+        // len0: equ $ - Lstr0
+        std::string label = "Lstr" + std::to_string(count_rodata);
+        stream_rodata << label << ": db \"" << s << "\", 0" << std::endl;
         stream_rodata << "len" << std::to_string(count_rodata) << " equ $ - " << label << std::endl;
         count_rodata++;
         return count_rodata-1; //return the non incremented version (but obv we still want it inc for later)
 
+    }
+    void print_newline(){
+        // for at the end of prints. i dont want newlines attached to memory. a second syscall is not that expensive
+        // plus now i can very easily write different print() and println() functions if i wanna
+        // AND concat wouldnt be weird as hell
+        stream_p << "\tmov rax , 1" <<std::endl;
+        stream_p << "\tmov rdi , 1" <<std::endl;
+        stream_p << "\tmov rdx, 1" << std::endl;
+        stream_p << "\tmov rsi, newline" << std::endl;
+        stream_p << "\tsyscall" << std::endl;
     }
 
 };

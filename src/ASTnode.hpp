@@ -12,6 +12,7 @@ class NodeProg;
 class NodeExprBinAdd;
 class NodeExprBinMult;
 class NodeExprBoolEq;
+class NodeExprBoolL;
 class NodeTermVar;
 class NodeTermIntLit;
 class NodeStmtExit;
@@ -33,6 +34,7 @@ public:
     virtual void visit(NodeTermVar* p) = 0;
     virtual void visit(NodeTermIntLit* p) = 0;
     virtual void visit(NodeExprBoolEq* p) = 0;
+    virtual void visit(NodeExprBoolL* p) = 0;
     virtual void visit(NodeStmtExit* p) = 0;
     virtual void visit(NodeStmtPrint* p) = 0;
     virtual void visit(NodeStmtInitVar* p) = 0;
@@ -303,78 +305,68 @@ public:
     }
 };
 
-class NodeExprBinAdd: public NodeExpr{
+class NodeExprBin :public NodeExpr{
 public:
     bool str_op() override{
         return false;
-    }
-    void accept(ASTVisitor& visitor) override{
-        visitor.visit(this);
     }
 
     std::unique_ptr<NodeExpr> lhs;
     std::unique_ptr<NodeExpr> rhs;
 
+    NodeExprBin(std::unique_ptr<NodeExpr> left_term,
+                   std::unique_ptr<NodeExpr> right_term, std::string nname) :
+    lhs(std::move(left_term)), rhs(std::move(right_term)), nodename(nname){}
+
+    void display_self(int depth) override{
+        std::cout << makespace(depth)<< "Binary " << nodename << " Expression:" << std::endl;
+        std::cout << makespace(depth) << "LHS:" << std::endl;
+        lhs->display_self(depth + 1);
+        std::cout << makespace(depth) << "RHS:" << std::endl;
+        rhs->display_self(depth + 1);
+    }
+private:
+    std::string nodename; 
+
+};
+
+class NodeExprBinAdd: public NodeExprBin{
+public:
+    void accept(ASTVisitor& visitor) override{
+        visitor.visit(this);
+    }
     NodeExprBinAdd(std::unique_ptr<NodeExpr> left_term,
                    std::unique_ptr<NodeExpr> right_term) :
-    lhs(std::move(left_term)), rhs(std::move(right_term)){}
+    NodeExprBin(std::move(left_term), std::move(right_term), "Add Node") {}
 
-    void display_self(int depth) override{
-        std::cout << makespace(depth)<< "Binary Add Node Expression:" << std::endl;
-        std::cout << makespace(depth) << "LHS:" << std::endl;
-        lhs->display_self(depth + 1);
-        std::cout << makespace(depth) << "RHS:" << std::endl;
-        rhs->display_self(depth + 1);
-    }
 };
-class NodeExprBinMult: public NodeExpr{
+class NodeExprBinMult: public NodeExprBin{
 public:
-    bool str_op() override{
-        return false;
-    }
     void accept(ASTVisitor& visitor) override{
         visitor.visit(this);
     }
-
-    std::unique_ptr<NodeExpr> lhs;
-    std::unique_ptr<NodeExpr> rhs;
-
     NodeExprBinMult(std::unique_ptr<NodeExpr> left_term,
                    std::unique_ptr<NodeExpr> right_term) :
-    lhs(std::move(left_term)), rhs(std::move(right_term)){}
-
-    void display_self(int depth) override{
-        std::cout << makespace(depth)<< "Binary Multiplation Node Expression:" << std::endl;
-        std::cout << makespace(depth) << "LHS:" << std::endl;
-        lhs->display_self(depth + 1);
-        std::cout << makespace(depth) << "RHS:" << std::endl;
-        rhs->display_self(depth + 1);
-    }
+    NodeExprBin(std::move(left_term), std::move(right_term), "Mult Node") {}
 };
 
-class NodeExprBoolEq: public NodeExpr{
+class NodeExprBoolEq: public NodeExprBin{
 public:
-    bool str_op() override{
-        return false;
-    }
     void accept(ASTVisitor& visitor) override{
         visitor.visit(this);
     }
-    std::unique_ptr<NodeExpr> lhs;
-    std::unique_ptr<NodeExpr> rhs;
-
     NodeExprBoolEq(std::unique_ptr<NodeExpr> left_term,
                    std::unique_ptr<NodeExpr> right_term) :
-    lhs(std::move(left_term)), rhs(std::move(right_term)){}
-
-    void display_self(int depth) override{
-        std::cout << makespace(depth)<< "Boolean Equals Expression:" << std::endl;
-        std::cout << makespace(depth) << "LHS:" << std::endl;
-        lhs->display_self(depth + 1);
-        std::cout << makespace(depth) << "RHS:" << std::endl;
-        rhs->display_self(depth + 1);
-    }
+    NodeExprBin(std::move(left_term), std::move(right_term), "Boolean Equals Node") {}
 };
-// a ton of repeated structure in these last few functions... can optimize code repition here for sure.
-// Just for these 3 it is fine, but when I start expanding more..
+
+class NodeExprBoolL: public NodeExprBin{
+public:
+    void accept(ASTVisitor& visitor) override{
+        visitor.visit(this);
+    }
+    NodeExprBoolL(std::unique_ptr<NodeExpr> left_term,
+                   std::unique_ptr<NodeExpr> right_term) :
+    NodeExprBin(std::move(left_term), std::move(right_term), "Boolean Equals Node") {}
+};
 #endif

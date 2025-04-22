@@ -98,7 +98,9 @@ public:
                 }
                 else if (operand.value().type == TokenType::BEQ){
                     lhs = std::make_unique<NodeExprBoolEq>(std::move(lhs.value()), std::move(rhs.value()));
-
+                }
+                else if (operand.value().type == TokenType::LESSTHAN){
+                    lhs = std::make_unique<NodeExprBoolL>(std::move(lhs.value()), std::move(rhs.value()));
                 }
 
             }
