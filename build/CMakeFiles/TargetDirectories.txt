@@ -1,0 +1,3 @@
+/home/alex/code/cpp/cflat/build/CMakeFiles/cflat.dir
+/home/alex/code/cpp/cflat/build/CMakeFiles/edit_cache.dir
+/home/alex/code/cpp/cflat/build/CMakeFiles/rebuild_cache.dir
