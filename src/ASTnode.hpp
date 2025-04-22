@@ -16,6 +16,7 @@ class NodeTermVar;
 class NodeTermIntLit;
 class NodeStmtExit;
 class NodeStmtIf;
+class NodeStmtWhile;
 class NodeStmtPrint;
 class NodeStmtInitVar;
 class NodeStmtReVar;
@@ -38,6 +39,7 @@ public:
     virtual void visit(NodeStmtReVar* p) = 0;
     virtual void visit(NodeStmtScope* p) = 0;
     virtual void visit(NodeStmtIf* p) = 0;
+    virtual void visit(NodeStmtWhile* p) = 0;
     virtual void visit(NodeTermStrLit* p) = 0;
     
 };
@@ -132,10 +134,35 @@ public:
 
     void display_self(int depth) override {
         std::cout << makespace(depth) <<"Node Statement: If" << std::endl;
-        std::cout << makespace(depth) <<"Exit Code:" << std:: endl;
+        std::cout << makespace(depth) <<"Condition Expression:" << std:: endl;
         bool_res->display_self(depth + 1);
         std::cout << makespace(depth) <<"Following Statement:" << std:: endl;
         following_logic->display_self(depth + 1);
+
+    }
+
+};
+
+class NodeStmtWhile: public NodeStmt{
+public:
+
+    void accept(ASTVisitor& visitor) override{
+        visitor.visit(this);
+    }
+
+    std::unique_ptr<NodeExpr> expression; //boolean result
+
+    std::unique_ptr<NodeStmt> inner_logic; // bad naming bro
+
+    NodeStmtWhile(std::unique_ptr<NodeExpr> ec, std::unique_ptr<NodeStmt> fl) : expression(std::move(ec)), inner_logic(std::move(fl)){}
+    
+
+    void display_self(int depth) override {
+        std::cout << makespace(depth) <<"Node Statement: If" << std::endl;
+        std::cout << makespace(depth) <<"Condition Expression:" << std:: endl;
+        expression->display_self(depth + 1);
+        std::cout << makespace(depth) <<"Following Statement:" << std:: endl;
+        inner_logic->display_self(depth + 1);
 
     }
 

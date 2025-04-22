@@ -223,6 +223,29 @@ public:
 
         stream_p << endlabel << ":"<<  std::endl; //.. and then continue along
     }
+    void visit(NodeStmtWhile* p){
+        // whileblock<count>:
+        // eval conditon expression.
+        // result is placed in rax from expression. Make the label, go to it
+        // jz .end<counter>
+        // <logic>
+        // jmp whileblock<count>
+        // .end:
+        // ..continued code
+        std::string whilelabel = "whileblock" + std::to_string(whilelabel_count);
+        std::string endwhile = ".endwhile" + std::to_string(whilelabel_count);
+        whilelabel_count++;
+
+        stream_p << whilelabel << ":" << std::endl;
+        p->expression->accept(*this); //put res in rax
+        stream_p << "\ttest rax, rax" << std::endl; // call test, will fill jz (jump if zero)
+
+        stream_p << "\tjz " << endwhile << std::endl;
+        p->inner_logic->accept(*this); // now fill will logic inside of if
+        stream_p << "\tjmp " << whilelabel << std::endl;
+
+        stream_p << endwhile << ":"<<  std::endl; //.. and then continue along
+    }
 
     void visit(NodeStmtScope* p){
         // var_stack is already populated with vars in a stack,
@@ -282,8 +305,11 @@ private:
     int var_stack_index = 0;
     int total_vars = 0;
 
-    //for if statements:
+    //for if labels:
     int endlabel_count = 0;
+
+    //for while labels:
+    int whilelabel_count = 0;
 
     int add_rodata(std::string s){
         if(stream_rodata.str().empty()){

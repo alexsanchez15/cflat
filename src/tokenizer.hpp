@@ -11,7 +11,7 @@
 
 // set up token types:
 enum class TokenType{
-	EXIT, KEYWORD, IDENTIFIER, EQUALS, INT_LITERAL, SEMI, WHITESPACE, RPAREN, LPAREN, PLUS, STAR, STRING, PRINT, LCURL, RCURL, IF, BEQ
+	EXIT, KEYWORD, IDENTIFIER, EQUALS, INT_LITERAL, SEMI, WHITESPACE, RPAREN, LPAREN, PLUS, STAR, STRING, PRINT, LCURL, RCURL, IF, BEQ, WHILE
 };
 struct Token{
     TokenType type;
@@ -56,6 +56,8 @@ inline std::string token_string(const TokenType type){
             return "IF";
         case TokenType::BEQ:
             return "BEQ"; // boolean equals
+        case TokenType::WHILE:
+            return "WHILE"; // boolean equals
         default:
             return "UNKNOWN"; //should never happen, avoid compilier being mad
     }
@@ -93,7 +95,7 @@ public:
     std::vector<Token> tokenize(){
         std::vector<Token> tokens;
         std::regex pattern
-            (R"(\b(exit|int|print|string|if)\b|"[^"]*"|[a-zA-Z_][a-zA-Z0-9_]*|(==)|[=,;,\(,\),+,*, \{,\}]|[\-]?\d+|\s+|.+)");
+            (R"(\b(exit|int|print|string|if|while)\b|"[^"]*"|[a-zA-Z_][a-zA-Z0-9_]*|(==)|[=,;,\(,\),+,*, \{,\}]|[\-]?\d+|\s+|.+)");
         std::sregex_iterator itr(m_src.begin(), m_src.end(), pattern);
         std::sregex_iterator end_marker;
 
@@ -110,6 +112,9 @@ public:
             }
             else if(match_str == "if"){ // direct string comp fast, use when i can
                 tokens.push_back({TokenType::IF, m_index});
+            }
+            else if(match_str == "while"){ // direct string comp fast, use when i can
+                tokens.push_back({TokenType::WHILE, m_index});
             }
             else if(match_str == "int" ||  match_str == "string"){ //str
                 tokens.push_back({TokenType::KEYWORD, m_index, match_str});

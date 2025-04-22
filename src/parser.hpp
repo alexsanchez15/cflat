@@ -249,6 +249,29 @@ public:
             //statement is over now
             return std::make_unique<NodeStmtIf>(std::move(node_expression.value()), std::move(statement.value()));
         }
+        else if(token.value().type == TokenType::WHILE){
+            consume(); //consume the exit
+            //expect parenthases immediately, if not throw error:
+            consume_or_error(TokenType::LPAREN);
+            try_consume_whitespace(); //perhaps some whitespace
+            auto node_expression = parse_expr();
+            if(!node_expression.has_value()){
+                std::cerr << "no expression found in while statement sadface" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            consume_or_error(TokenType::RPAREN);
+            try_consume_whitespace();
+            
+            //now we want another statement. either a actual statement or a {} (also a valid statement)
+            auto statement = parse_stmt();
+            if(!statement.has_value()){
+                std::cerr << "no statement found following while statement" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            //no need to consume ; or {} or anything because statements do this themselves.
+            //statement is over now
+            return std::make_unique<NodeStmtWhile>(std::move(node_expression.value()), std::move(statement.value()));
+        }
         
         return {}; // TODO placeholder
     }
