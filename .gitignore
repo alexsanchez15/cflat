@@ -1,0 +1,13 @@
+#cmake stuff
+build/
+CMakeLists.txt
+node_modules/
+p1
+package-lock.json
+program.o
+mrun.sh
+output.asm
+program
+run.sh
+test.cfl
+
