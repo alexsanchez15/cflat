@@ -12,6 +12,8 @@ $$
 
 ## English Explaination
 
+THIS IS SUPER NOT UPDATED I WILL TRY TO UPDATE THIS AT SOME POINT.... was much more useful for me in the earliest stages
+
 1. A program is a some amount of statements.
 2. A Statement is:
 
