@@ -20,6 +20,14 @@
 struct offset_t{
     int o1;
     std::optional<int> o2;
+    // offset 1, offset 2, optional and only used for string types
+    // only string types and int types exist so this is fine,
+    // but expanding this i would probably include some metadata here
+};
+struct func_data{
+    std::string input_t; // as i am doing only single parem, single return type
+    std::string output_t;
+    std::optional<bool> is_std_lib;
 };
 class Generator : ASTVisitor{
 public:
@@ -27,6 +35,7 @@ public:
     explicit Generator(NodeProg* p) : program(p){} // only thing we need is p
     
     void generate(){
+        fillfuncs();
         visit(program);
     }
     
@@ -35,7 +44,7 @@ public:
         // will go through the program, and make the code
         // default template NASM to start with:
         std::cout << "Visiting NodeProg Node. # of statements in prog: " << p->statements.size() << std::endl;
-        stream_p << "section .text\n\tglobal _start\n_start:\n\t; code starts here" << std::endl;
+        stream_p << "section .text\nglobal _start\n_start:\n\t; code starts here" << std::endl;
         stream_p << "\tmov rbp, rsp" << std::endl; // store location of start of stack pointer, for variable offset.
         stream_p <<"\tsub rsp, RESERVED_VARS" << std::endl;
         for(const std::unique_ptr<NodeStmt>& statement: program->statements){
@@ -127,7 +136,7 @@ public:
         stream_p <<"\tmov rax, 1" << std::endl;
         stream_p <<"\tmov rdi, 1" << std::endl;
         stream_p <<"\tsyscall" << std::endl;
-        print_newline();
+        if(p->newline) print_newline();
     };
     void visit(NodeStmtInitVar* p) {
         // ok so what happens when we init a var?
@@ -238,7 +247,7 @@ public:
         // .end:
         // ..continued code
         std::string whilelabel = "whileblock" + std::to_string(whilelabel_count);
-        std::string endwhile = ".endwhile" + std::to_string(whilelabel_count);
+        std::string endwhile = "endwhile" + std::to_string(whilelabel_count);
         whilelabel_count++;
 
         stream_p << whilelabel << ":" << std::endl;
@@ -275,11 +284,44 @@ public:
             }
         }
     }
+    void visit(NodeExprFunc* p){
+        std::string fname = *p->fname;
+        if(functions_map.count(fname) == 0){
+            std::cerr << "Use of undefined function: " << fname << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        p->param->accept(*this); // param in rax
+
+        if(functions_map[fname].is_std_lib){
+            // as this doesn't support other functions at this time, this is the only logic I will do.
+            if((functions_map[fname].input_t == "int" && !p->param->str_op())|| (
+            functions_map[fname].input_t == "string" && p->param->str_op())){ //this is really ugly. 
+                //input matches
+                stream_p << "\tcall " << fname << std::endl;
+                externs << "extern " << fname << std::endl;
+                std::cout << "externs\n" << externs.str() << std::endl;
+                if(functions_map[fname].output_t == "string"){
+                    p->is_str = true;
+                }
+
+            }
+            else{
+                std::cerr << "Improper use of function " << fname << std::endl;
+                std::cerr << "Accepts: " << functions_map[fname].input_t << std::endl;
+                exit(EXIT_FAILURE);
+
+            }
+        }
+    }
 
     //get the final nasm generated
     std::string get_assembly(){
         std::stringstream final;
         std::string exit_clean = "\t;exit cleanly\n\tmov rax, 60\n\tmov rdi, 0\n\tsyscall";
+        if(!externs.str().empty()){
+            final << externs.str() << std::endl;
+        }
         if(!stream_data.str().empty()){
             final << stream_data.str() << std::endl;
         }
@@ -301,6 +343,7 @@ private:
     std::stringstream stream_p;
     std::stringstream stream_data;
     std::stringstream stream_rodata;
+    std::stringstream externs;
     int count_rodata = 0;
     int count_data = 0;
 
@@ -315,6 +358,9 @@ private:
 
     //for while labels:
     int whilelabel_count = 0;
+
+    //for functions
+    std::unordered_map<std::string, func_data> functions_map;
 
     int add_rodata(std::string s){
         if(stream_rodata.str().empty()){
@@ -339,6 +385,11 @@ private:
         stream_p << "\tmov rdx, 1" << std::endl;
         stream_p << "\tmov rsi, newline" << std::endl;
         stream_p << "\tsyscall" << std::endl;
+    }
+    void fillfuncs(){
+        // fills in standard functions
+        functions_map["to_str"] = {"int", "string", true};
+
     }
 
 };

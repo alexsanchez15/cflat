@@ -30,10 +30,28 @@ public:
 
         }
         else if(token.value().type == TokenType::IDENTIFIER){
-            consume(); //consume the int literal
-            try_consume_whitespace(); // if theres whitespace, kill it.
-            //.value.value() lol but value is optional so is correct
-            return std::make_unique<NodeTermVar>(std::move(std::make_unique<std::string>(token.value().value.value())));
+            //see if there is parens immediately, no whitespace
+            std::cout << "correct" << std::endl;
+            if(auto t2 = peek(1); t2.has_value() && t2.value().type == TokenType::LPAREN){
+                //this is a function call
+                std::unique_ptr<std::string> fname = std::make_unique<std::string>(token.value().value.value()); // value value value value value
+                consume(); // consume the identifier, which holds fname
+                consume(); // rparen
+                auto expr = parse_expr(); // to_string(12345) -> expr is intlit (this is idea)
+                if(!expr){
+                    error_out("Expected Expression inside of function call");
+                }
+                consume_or_error(TokenType::RPAREN);
+                
+                return std::make_unique<NodeExprFunc>(std::move(fname), std::move(expr.value()));
+            }
+            else{
+                //just a var
+                consume(); //consume the identifier
+                try_consume_whitespace(); // if theres whitespace, kill it.
+                //.value.value() lol but value is optional so is correct
+                return std::make_unique<NodeTermVar>(std::move(std::make_unique<std::string>(token.value().value.value())));
+            }
 
         }
         else if(token.value().type == TokenType::STRING){
@@ -166,7 +184,8 @@ public:
 
 
         }
-        else if(token.value().type == TokenType::PRINT){
+        else if(token.value().type == TokenType::PRINT|| token.value().type == TokenType::PRINTLN){
+            bool nl = token.value().type == TokenType::PRINTLN;
             consume(); //consume the exit
             //expect parenthases immediately, if not throw error:
             consume_or_error(TokenType::LPAREN);
@@ -177,7 +196,7 @@ public:
                 try_consume_whitespace();
                 consume_or_error(TokenType::SEMI);
                 //statement is over now
-                return std::make_unique<NodeStmtPrint>(std::move(node_expression.value()));
+                return std::make_unique<NodeStmtPrint>(std::move(node_expression.value()), nl);
             }
             else{
                 // TODO please better errors :sob:

@@ -1,6 +1,19 @@
-int i = 0;
-while(i < 10){
-    print("hi");
+int i = 1;
+int j = 1;
+println("Multiplication Table! From 1-12");
+while(i < 13){
+    j = 1;
+    while(j < 13){
+        print(to_str(i * j));
+        if(i * j < 100){
+            print(" ");
+        }
+        if(i * j < 10){
+            print(" ");
+        }
+        print(" ");
+        j = j + 1;
+    }
+    println("");
     i = i + 1;
 }
-exit(-1);

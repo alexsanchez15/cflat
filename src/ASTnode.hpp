@@ -13,6 +13,7 @@ class NodeExprBinAdd;
 class NodeExprBinMult;
 class NodeExprBoolEq;
 class NodeExprBoolL;
+class NodeExprFunc;
 class NodeTermVar;
 class NodeTermIntLit;
 class NodeStmtExit;
@@ -35,6 +36,7 @@ public:
     virtual void visit(NodeTermIntLit* p) = 0;
     virtual void visit(NodeExprBoolEq* p) = 0;
     virtual void visit(NodeExprBoolL* p) = 0;
+    virtual void visit(NodeExprFunc* p) = 0;
     virtual void visit(NodeStmtExit* p) = 0;
     virtual void visit(NodeStmtPrint* p) = 0;
     virtual void visit(NodeStmtInitVar* p) = 0;
@@ -53,6 +55,7 @@ public:
     virtual ~ASTNode() = default;
     virtual void display_self(int depth) = 0;
     virtual void accept(ASTVisitor& visitor) = 0; 
+
 
     //just for debugging/printing parse tree (AST)
     std::string makespace(int spaces){
@@ -178,8 +181,9 @@ public:
     }
 
     std::unique_ptr<NodeExpr> str_expr;
+    bool newline = false;
 
-    NodeStmtPrint(std::unique_ptr<NodeExpr> s) : str_expr(std::move(s)){}
+    NodeStmtPrint(std::unique_ptr<NodeExpr> s, bool nl) : str_expr(std::move(s)), newline(nl){}
     
 
     void display_self(int depth) override {
@@ -302,6 +306,27 @@ public:
 
     void display_self(int depth) override{
         std::cout << makespace(depth) <<"Term: StrLit: " << *str_contents << std::endl;
+    }
+};
+
+class NodeExprFunc : public NodeExpr{
+public:
+    void accept(ASTVisitor& visitor) override{
+        visitor.visit(this);
+    }
+    bool str_op() override{
+        return is_str;
+    }
+    bool is_str = false;
+    std::unique_ptr<std::string> fname;
+    std::unique_ptr<NodeExpr> param; // single param funcs is all for now
+
+    NodeExprFunc(std::unique_ptr<std::string> iden, std::unique_ptr<NodeExpr> ex) : fname(std::move(iden)), param(std::move(ex)){} //varname... identifier... same thing
+
+    void display_self(int depth) override{
+        std::cout << makespace(depth) <<"Function: " << *fname << std::endl;
+        std::cout << makespace(depth) << "Taking Parameter(s) Expression:" << std::endl;
+        param->display_self(depth + 1);
     }
 };
 
